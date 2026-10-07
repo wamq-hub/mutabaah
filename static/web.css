@@ -1,0 +1,49 @@
+/* نسخة المتصفح: خط IBM Plex بدل DIN، وإخفاء ما يحتاج الجهاز نفسه، وشاشة التحميل وربط الملفات */
+:root, :root[data-theme="dark"] { --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; }
+.local-only { display: none !important; }
+
+header.top .acts { flex-wrap: wrap; justify-content: flex-end; }
+header.top .acts .btn { white-space: nowrap; }
+
+/* بطاقة كل مدرب: ربط ملفه من الجهاز */
+.web-link { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--line); border-radius: 10px; background: var(--soft); font-size: .84rem; }
+.web-link .st { color: var(--muted); }
+.web-link .st b { color: var(--ink); font-weight: 600; }
+.web-link .st.ok b { color: var(--ok); }
+.web-link .st.warn b { color: var(--mid); }
+.web-link .st.err b { color: var(--bad); }
+.web-link .sp { margin-inline-start: auto; display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* شريط طلب الإذن بقراءة الملفات المربوطة */
+#web-perm { display: none; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: var(--mid-s); border: 1px solid var(--mid); color: var(--ink); font-size: .9rem; }
+#web-perm.on { display: flex; }
+#web-perm .btn { margin-inline-start: auto; }
+
+.web-note { font-size: .84rem; line-height: 1.8; color: var(--muted); margin: 10px 0 0; }
+.web-note b { color: var(--ink); }
+.web-danger { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.web-danger .muted { font-size: .82rem; }
+.web-scan { margin-bottom: 6px; }
+
+/* شاشة التحميل */
+#web-boot { position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--bg, #F4F7FA); }
+#web-boot .box { width: min(460px, 100%); text-align: center; padding: 28px 22px; border-radius: 16px; background: var(--card, #fff); border: 1px solid var(--line, #DCE3EA); border-top: 4px solid #07A99E; box-shadow: 0 10px 30px rgba(5, 63, 103, .1); }
+#web-boot .lg { height: 54px; margin-bottom: 4px; }
+#web-boot h2 { margin: 6px 0 4px; font-size: 1.25rem; color: #2B5273; font-weight: 600; }
+:root[data-theme="dark"] #web-boot h2 { color: #CFE3F2; }
+#web-boot p { margin: 6px 0; color: var(--muted, #7A8895); font-size: .9rem; line-height: 1.8; }
+#web-boot #web-boot-text { color: var(--ink, #1B2733); font-weight: 600; }
+#web-boot .spin { width: 38px; height: 38px; margin: 8px auto 10px; border-radius: 50%; border: 4px solid var(--line, #DCE3EA); border-top-color: #07A99E; border-right-color: #2B5273; animation: wb-spin 1s linear infinite; }
+#web-boot.err .spin { display: none; }
+#web-boot.err #web-boot-text { color: var(--bad, #B3261E); }
+@keyframes wb-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { #web-boot .spin { animation-duration: 3s; } }
+
+@media (max-width: 720px) {
+  header.top { position: static; }
+  nav.tabs { top: 0; }
+  header.top .in { flex-wrap: wrap; padding: 10px 16px; }
+  header.top .meta { display: none; }
+  main { padding: 14px 16px 60px; }
+  nav.tabs .in { padding: 7px 16px; }
+}

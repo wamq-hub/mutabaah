@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>متابعة مهام أعضاء هيئة التدريب</title>
+<link rel="icon" href="/static/img/logo-color.png">
+<script>try{var q=(location.search.match(/theme=(dark|light)/)||[])[1];if(q)localStorage.setItem("tasks-theme",q);var t=localStorage.getItem("tasks-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/app.css?v=20261007202606"><link rel="stylesheet" href="/static/web.css?v=20261007202606"><meta name="robots" content="noindex, nofollow"><meta name="description" content="متابعة مهام أعضاء هيئة التدريب أسبوعاً بأسبوع: لوحة القسم والرسائل والتقارير، تعمل داخل المتصفح وبياناتك لا تغادر جهازك.">
+</head>
+<body>
+<header class="top"><div class="in">
+  <img class="logo" src="/static/img/logo-white.png" alt="المؤسسة العامة للتدريب التقني والمهني">
+  <div class="ttl"><h1>متابعة مهام أعضاء هيئة التدريب</h1><div class="sub" id="hSub">المهام الثابتة والطارئة والإبداعية — أسبوعاً بأسبوع</div></div>
+  <div class="meta" id="hMeta"></div>
+  <div class="acts">
+    <button class="btn ghost sm" id="bRefresh" title="إعادة قراءة ملفات المدربين">↻ تحديث</button>
+    <button class="btn ghost sm" id="bTheme" title="الوضع الليلي / النهاري">🌙</button>
+  </div>
+</div></header>
+<nav class="tabs"><div class="in" id="nav">
+  <button data-s="dash" class="on">لوحة القسم</button>
+  <button data-s="files">المدربون والملفات <span class="n" id="nTr">0</span></button>
+  <button data-s="issue">الإصدار والقفل</button>
+  <button data-s="msgs">المراسلات</button>
+  <button data-s="reps">التقارير</button>
+  <button data-s="cfg">الإعدادات</button>
+</div></nav>
+
+<main>
+<!-- ═════════ لوحة القسم -->
+<section class="view on" id="s-dash">
+  <div class="card">
+    <h2>أسابيع الفصل <span class="sp" id="wkInfo"></span></h2>
+    <div class="weekstrip" id="weeks"></div>
+  </div>
+  <div class="kpis" id="dKpis"></div>
+  <div class="card">
+    <h2><span id="trTitle">المدربون</span><span class="sp"><span class="legend"><span class="s0">سريع</span><span class="s1">متوسط</span><span class="s2">ضعيف</span><span class="s3">لا يوجد رد</span></span></span></h2>
+    <div class="wrap"><table class="t" id="tTr"></table></div>
+  </div>
+  <div class="card">
+    <h2>ما يلزم متابعته الآن</h2>
+    <div id="dNeed"></div>
+  </div>
+  <div class="card">
+    <h2>خريطة الإنجاز في الفصل <span class="sp muted">النسبة = المنجز المعتمد ÷ المطلوب. اضغط أي خانة لعرض ذلك الأسبوع للمدرب.</span></h2>
+    <div class="wrap tall"><table class="t" id="tMap"></table></div>
+  </div>
+</section>
+
+<!-- ═════════ المدربون والملفات -->
+<section class="view" id="s-files">
+  <div class="grid2">
+    <div class="card">
+      <h2>إضافة مدرب</h2>
+      <div class="row">
+        <label class="f">اسم المدرب<input id="nName"></label>
+        <label class="f">البريد الإلكتروني (اختياري)<input id="nEmail" class="ltr"></label>
+      </div>
+      <div class="row" style="margin-top:10px"><button class="btn p" id="bAdd">إضافة المدرب</button></div>
+      <p class="hint">بعد الإضافة حدّد ملف المدرب: «إنشاء ملفه» من القالب داخل مجلده، أو «استعراض» لملف موجود، أو أفلت الملف على بطاقته.</p>
+    </div>
+    <div class="card">
+      <h2>ملفات وصلتك من المدربين</h2>
+      <div class="drop" id="drop"><b>أفلت هنا ملفات المتابعة</b> (يمكن أكثر من ملف)<br>
+        <span class="muted">تُحفظ نسخة منها وتُربط بصاحبها حسب الاسم المكتوب داخل الملف. النسخة ثابتة؛ وللقراءة أولاً بأول اربط المدرب بمسار ملفه.</span></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>البحث عن ملفات المدربين في مجلد</h2>
+    <div class="row local-only">
+      <input class="in ltr" id="scanDir" placeholder="D:\...\مجلدات المدربين" style="flex:1;min-width:260px">
+      <button class="btn" id="bScanBrowse">استعراض…</button>
+      <button class="btn t" id="bScan">بحث</button>
+    </div>
+    <p class="hint">يبحث في المجلد وما تحته (حتى ستة مستويات) عن ملفات القالب، ويعرض اسم صاحب كل ملف لتربطه بضغطة.</p>
+    <div id="scanOut"></div>
+  </div>
+  <div class="card">
+    <h2>المدربون <span class="sp muted">الترتيب هنا هو ترتيبهم في اللوحة والتقارير</span></h2>
+    <div id="trList"></div>
+  </div>
+</section>
+
+<!-- ═════════ الإصدار والقفل -->
+<section class="view" id="s-issue">
+  <div class="card">
+    <h2>إصدار ملفات المدربين <span class="sp"><a class="btn sm" href="/api/template?kind=filled">تنزيل القالب المعبأ</a><a class="btn sm" href="/api/template?kind=blank">تنزيل القالب المفرغ</a></span></h2>
+    <p class="hint">ملف متابعة مستقل لكل مدرب باسمه وقسمه، من القالب المعبأ بمهام القسم أو من القالب المفرغ الذي يكتب فيه رئيس القسم مهامه بنفسه. الرقم السري يحمي المعادلات وهيكل الملف، وتبقى خانات التعبئة مفتوحة.</p>
+    <div class="grid2">
+      <div>
+        <span class="muted">المدربون المسجلون</span>
+        <div class="row" style="margin:4px 0"><button class="btn sm" data-all="#isTr">تحديد الكل</button><button class="btn sm" data-none="#isTr">إلغاء التحديد</button></div>
+        <div class="checks" id="isTr"></div>
+      </div>
+      <label class="f">أسماء مدربين آخرين (اسم في كل سطر)<textarea id="isNames" rows="6" placeholder="م. الاسم الأول الأخير"></textarea></label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <span class="muted">نوع الملف:</span>
+      <label class="chk"><input type="radio" name="isKind" value="filled" checked> معبأ بمهام القسم</label>
+      <label class="chk"><input type="radio" name="isKind" value="blank"> مفرغ (يكتب رئيس القسم المهام)</label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="f">الرقم السري (اختياري)<input id="isPw" type="password" autocomplete="new-password"></label>
+      <label class="f">تأكيد الرقم السري<input id="isPw2" type="password" autocomplete="new-password"></label>
+    </div>
+    <div class="row local-only" style="margin-top:10px">
+      <label class="f">حفظ نسخة في مجلد (اختياري)<input id="isFolder" class="ltr" placeholder="D:\...\ملفات المتابعة"></label>
+      <button class="btn" data-pick="#isFolder" style="align-self:flex-end">استعراض…</button>
+      <label class="chk" style="align-self:flex-end"><input type="checkbox" id="isLink" checked> ربط كل مدرب بملفه الجديد</label>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn p" id="bIssue">إصدار الملفات</button><span class="muted" id="isMsg"></span></div>
+    <div id="isOut"></div>
+  </div>
+
+  <div class="card">
+    <h2>قفل ملفات المدربين برقم سري</h2>
+    <p class="hint">يُنشئ نسخة مقفلة من ملف كل مدرب: كل الأوراق محمية بالرقم السري، والأسابيع التي تختارها تُقفل كاملة فلا يمكن تعديل أي خانة فيها (مثل الأسابيع التي اعتمدتها). الملف الأصلي لا يتغير؛ سلّم النسخة المقفلة للمدرب بدلاً منه. <b>احفظ الرقم السري، فلا يمكن استرجاعه.</b></p>
+    <div class="grid2">
+      <div>
+        <span class="muted">المدربون</span>
+        <div class="row" style="margin:4px 0"><button class="btn sm" data-all="#lkTr">تحديد الكل</button><button class="btn sm" data-none="#lkTr">إلغاء التحديد</button></div>
+        <div class="checks" id="lkTr"></div>
+      </div>
+      <div>
+        <span class="muted">الأسابيع التي تُقفل كاملة</span>
+        <div class="row" style="margin:4px 0"><button class="btn sm" id="lkDone">الأسابيع المنتهية</button><button class="btn sm" data-none="#lkWeeks">بلا أسابيع (المعادلات فقط)</button></div>
+        <div class="chips" id="lkWeeks"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="f">الرقم السري<input id="lkPw" type="password" autocomplete="new-password"></label>
+      <label class="f">تأكيد الرقم السري<input id="lkPw2" type="password" autocomplete="new-password"></label>
+    </div>
+    <div class="row local-only" style="margin-top:8px"><label class="chk"><input type="checkbox" id="lkBeside" checked> حفظ النسخة المقفلة بجانب ملف كل مدرب</label></div>
+    <div class="row" style="margin-top:12px"><button class="btn p" id="bLock">إنشاء النسخ المقفلة</button><span class="muted" id="lkMsg"></span></div>
+    <div id="lkOut"></div>
+  </div>
+</section>
+
+<!-- ═════════ المراسلات -->
+<section class="view" id="s-msgs">
+  <div class="card">
+    <h2>رسائل البريد <span class="sp"><select class="in" id="mWeek"></select></span></h2>
+    <div class="chips" id="mKinds">
+      <span class="chip on" data-k="">الكل</span>
+      <span class="chip" data-k="remind">تذكير بمهام الأسبوع</span>
+      <span class="chip" data-k="late">متابعة المتأخر</span>
+      <span class="chip" data-k="summary">ملخص الأسبوع للمدرب</span>
+      <span class="chip" data-k="all">رسالة عامة للمدربين</span>
+      <span class="chip" data-k="agent">ملخص لوكيل شؤون المدربين</span>
+    </div>
+    <p class="hint">نص جاهز: انسخ الموضوع والنص والصقهما في بريدك. رسالتا التذكير والمتأخر تُكتبان فقط لمن عنده ما يلزم.</p>
+  </div>
+  <div id="msgOut"></div>
+</section>
+
+<!-- ═════════ التقارير -->
+<section class="view" id="s-reps">
+  <div class="card">
+    <h2>إصدار التقارير على الورق الرسمي <span class="sp">
+      <select class="in" id="rWeek"></select><select class="in" id="rTr"></select>
+      <label class="muted local-only"><input type="checkbox" id="rPdf" checked> مع ملف PDF</label></span></h2>
+    <div class="grid3">
+      <div class="rep"><span class="ic">▤</span><h4>تقرير القسم للأسبوع</h4><p>حالة كل المدربين في الأسبوع المختار ونسبة الفصل، وما يلزم متابعته، موجّه لوكيل شؤون المدربين.</p><button class="btn p" data-rep="dept-week">إصدار</button></div>
+      <div class="rep"><span class="ic">☰</span><h4>تقارير المدربين للأسبوع</h4><p>تقرير لكل مدرب: مهام الأسبوع وحالتها وسرعتها، والمرحّل، والإبداعي، وملاحظاتك.</p><button class="btn" data-rep="all-week">إصدار للجميع</button></div>
+      <div class="rep"><span class="ic">◧</span><h4>تقرير مدرب للأسبوع</h4><p>التقرير نفسه للمدرب المختار فقط.</p><button class="btn" data-rep="trainer-week">إصدار</button></div>
+      <div class="rep"><span class="ic">◩</span><h4>تقرير مدرب للفصل</h4><p>الإنجاز أسبوعاً بأسبوع، وتوزيع السرعة (البند 20 في نموذج التقييم)، والمتأخر، والإبداعي.</p><button class="btn" data-rep="trainer-semester">إصدار</button></div>
+    </div>
+    <div id="repMsg" style="margin-top:12px"></div>
+  </div>
+  <div class="card"><h2>آخر التقارير</h2><div id="repList"></div></div>
+</section>
+
+<!-- ═════════ الإعدادات -->
+<section class="view" id="s-cfg">
+  <div class="card">
+    <h2>بيانات القسم</h2>
+    <div class="row">
+      <label class="f">القسم<input id="cDept"></label>
+      <label class="f">الوحدة التدريبية<input id="cCollege"></label>
+      <label class="f">اسم رئيس القسم (للتوقيع والرسائل)<input id="cHead"></label>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="f">الفصل التدريبي (لإنشاء ملفات المدربين)<select id="cSem"></select></label>
+      <label class="f">تاريخ المتابعة (فارغ = اليوم)<input id="cToday" type="date"></label>
+    </div>
+    <div class="row" style="margin-top:12px"><button class="btn p" id="bCfg">حفظ</button><span id="cfgMsg" class="muted"></span></div>
+    <p class="hint">«تاريخ المتابعة» يحدد المهام التي تجاوزت موعدها؛ اتركه فارغاً في الاستخدام العادي.</p>
+  </div>
+  <div class="card">
+    <h2>عن البرنامج</h2>
+    <ul class="muted" style="line-height:2">
+      <li>يقرأ ملفات المدربين فقط ولا يعدّل عليها.</li>
+      <li>السرعة تُحسب بأيام العمل بين آخر موعد وتاريخ الإنجاز، وتعديلك في الملف يُقدَّم عليها.</li>
+      <li>المهمة غير المنجزة التي تُرحَّل تظهر في الأسابيع التالية حتى تُسجَّل منجزة في ورقة أسبوعها.</li>
+      <li>التقويم والإجازات من التقويم التدريبي المعتمد وتعميم الإجازات الإضافية.</li>
+    </ul>
+  </div>
+</section>
+<div class="credit">ألوان الواجهة والتقارير من دليل الهوية البصرية للمؤسسة العامة للتدريب التقني والمهني</div>
+</main>
+
+<div class="modal" id="ov"><div class="box" id="panel"></div></div>
+<div class="toast" id="toast"></div>
+<div id="web-boot"><div class="box"><img src="/static/img/logo-color.png" alt="" class="lg"><div class="spin"></div><h2>متابعة مهام أعضاء هيئة التدريب</h2><p id="web-boot-text">جارٍ التحميل…</p><p>يُحمَّل البرنامج كاملاً عند الفتح الأول (قرابة 30 ميجابايت)، ويكون أسرع بعد ذلك. تبقى البيانات كلها في متصفحك ولا تُرسل إلى أي خادم.</p></div></div><script>/* صفحة البرنامج: تشغّل عامل بايثون، وتجيب طلبات عامل الخدمة منه، ثم تحمّل الواجهة. */
+(async function () {
+  const VERSION = "20261007202606";
+  const ov = document.getElementById("web-boot"), txt = document.getElementById("web-boot-text");
+  const fail = m => { ov.classList.add("err"); txt.textContent = m; };
+  if (!("serviceWorker" in navigator) || !window.indexedDB) {
+    fail("هذا المتصفح لا يدعم تشغيل البرنامج. استخدم إصداراً حديثاً من Edge أو Chrome أو Safari أو Firefox، وليس نافذة التصفح الخاص.");
+    return;
+  }
+  const worker = new Worker("/worker.js?v=" + VERSION);
+  const pending = new Map();
+  let seq = 0, readyRes;
+  const workerReady = new Promise(r => { readyRes = r; });
+  worker.onmessage = ev => {
+    const d = ev.data;
+    if (d.type === "progress") txt.textContent = d.text;
+    else if (d.type === "ready") readyRes();
+    else if (d.type === "fail") fail("تعذر تشغيل البرنامج: " + d.text + " — أعد تحميل الصفحة.");
+    else if (d.type === "res") { const f = pending.get(d.id); if (f) f(d); }
+  };
+  navigator.serviceWorker.addEventListener("message", ev => {
+    if (!ev.data || ev.data.type !== "tasks-req") return;
+    const port = ev.ports[0], id = ++seq, m = ev.data.msg;
+    pending.set(id, d => {
+      pending.delete(id);
+      port.postMessage({ status: d.status, headers: d.headers, body: d.body }, d.body ? [d.body] : []);
+    });
+    worker.postMessage({ type: "req", id, msg: m }, m.body ? [m.body] : []);
+  });
+  navigator.serviceWorker.startMessages();
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+    if (!navigator.serviceWorker.controller)
+      await new Promise(r => navigator.serviceWorker.addEventListener("controllerchange", r, { once: true }));
+  } catch (err) {
+    fail("تعذر تفعيل الأداة في هذا المتصفح: " + err.message);
+    return;
+  }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) { /* */ }
+  await workerReady;
+  for (const src of ["/static/app.js?v=" + VERSION, "/static/web.js?v=" + VERSION]) {
+    await new Promise((res, rej) => { const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.body.appendChild(s); });
+  }
+  ov.remove();
+})();
+</script>
+</body>
+</html>
