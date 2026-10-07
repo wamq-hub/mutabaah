@@ -1,6 +1,6 @@
 /* عامل الخدمة: يحوّل طلبات الأداة (/api و/img و/reports و/issued و/locked) إلى صفحة الأداة المفتوحة، وهي تشغّلها ببايثون داخل المتصفح.
    لا يُرسل أي طلب إلى خادم: البيانات تبقى في متصفح المستخدم. */
-const VERSION = "20261007221212";
+const VERSION = "20261007224642";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
 
