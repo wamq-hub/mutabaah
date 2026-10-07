@@ -4,7 +4,9 @@
   const BK = {
     loaded: false, bank: null, orig: '', open: new Set(), raw: {}, prevDue: {},
     meta: { terms: ['الأول', 'الثاني', 'الصيفي'], weekdays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] },
-    psem: null, psemUser: false, pOpen: new Set(), pTimer: null, pSeq: 0, bound: false, onTab: false
+    psem: null, psemUser: false, pOpen: new Set(), pTimer: null, pSeq: 0, bound: false, onTab: false,
+    // المهام المقترحة: المحدد للإضافة، والبحث، وتصفية الفصل، وإخفاء المضافة، والأسابيع المفتوحة
+    sgSel: new Set(), sgQ: '', sgTerm: '', sgHide: false, sgOpen: new Set(), sgSig: ''
   };
   const COUNTS = [
     ['emergency_rows', 'أسطر المهام الطارئة الظاهرة في كل أسبوع', 'أسطر فارغة يكتب فيها رئيس القسم ما يرد من مهام طارئة؛ وإن سُجّل للأسبوع عدد أكبر ظهرت كلها.'],
@@ -96,6 +98,7 @@
   // ═════════ التحميل والرسم
   function setBank(b) {
     b.tasks = b.tasks || []; b.emergency = b.emergency || []; b.speed = b.speed || { medium_max_delay: 2 };
+    if (!Array.isArray(b.suggested)) b.suggested = [];   // للقراءة فقط: تُعاد إلى الخادم كما وصلت
     b.tasks.forEach(t => { t.weeks = t.weeks || []; t.due = t.due || { rule: 'week_end' }; t.eval = t.eval || []; t.terms = t.terms || []; });
     BK.bank = b; BK.orig = canon(b); BK.raw = {}; BK.prevDue = {}; BK.loaded = true;
   }
@@ -134,6 +137,16 @@
         <p class="hint">ترتيب المهام هنا هو ترتيبها في ورقة كل أسبوع. اضغط على المهمة لتعديلها، واستعمل ▲▼ لتغيير ترتيبها.</p>
         <div id="bkTasks"></div>
         <div class="row" style="margin-top:10px"><button class="btn sm t" data-act="add">+ إضافة مهمة</button></div></div>
+      <div class="card" id="bkSugCard"><h2>مهام مقترحة من مهام الجودة <span class="badge br" id="bkSugCount"></span>
+        <span class="sp"><button class="btn sm p" data-act="sg-addsel" id="bkSugAddSel" disabled>إضافة المحدد</button></span></h2>
+        <p class="hint">مهام مأخوذة من «المفكرة الإشرافية» ومن «تقويم أعمال جودة التدريب»، وهي مقترحات فقط: لا تدخل ملفات المدربين حتى يضيفها رئيس القسم إلى مهام القسم. والإضافة تنسخ المهمة إلى قائمة «مهام البنك» أعلاه حيث يمكن تعديل أسابيعها وموعدها وسائر حقولها، ثم تُعتمد بزر «حفظ التغييرات».</p>
+        <div class="bk-sgf">
+          <input class="in bk-sgq" type="search" data-sg="q" value="${esc(BK.sgQ)}" placeholder="بحث في المهام المقترحة…" aria-label="بحث في المهام المقترحة">
+          <div class="chips" id="bkSugTerms" role="group" aria-label="تصفية حسب الفصل"></div>
+          <label class="chk"><input type="checkbox" data-sg="hide" ${BK.sgHide ? 'checked' : ''}> إخفاء المضافة</label></div>
+        <div class="row bk-sgbar"><button class="btn sm" data-act="sg-all">تحديد الكل</button><button class="btn sm" data-act="sg-none">إلغاء التحديد</button>
+          <button class="btn sm" data-act="sg-open">توسيع الكل</button><button class="btn sm" data-act="sg-close">طي الكل</button><span class="muted" id="bkSugInfo"></span></div>
+        <div id="bkSug"></div></div>
       <div class="card"><h2>إعدادات ملفات المدربين</h2>
         <p class="hint">تُحفظ مع البنك بزر «حفظ التغييرات»، وتُطبَّق على الملفات التي تُصدَر بعد الحفظ.</p><div id="bkSet"></div></div>
       <div class="card"><h2>المهام الطارئة المسجلة <span class="badge br" id="bkEmCount"></span></h2>
@@ -147,7 +160,7 @@
         <div id="bkPrev"></div></div>
     </div></div>`;
   }
-  function paintAll() { paintStats(); paintTasks(); paintSettings(); paintEmerg(); paintSem(); markDirty(); }
+  function paintAll() { paintStats(); paintTasks(); paintSug(); paintSettings(); paintEmerg(); paintSem(); markDirty(); }
   function paintStats() {
     const T = BK.bank.tasks, ong = T.filter(t => t.due.rule === 'ongoing').length;
     el('bkStats').innerHTML = [`<span class="badge br">مهام البنك: ${T.length}</span>`, `<span class="badge ok">بموعد تسليم: ${T.length - ong}</span>`,
@@ -180,7 +193,7 @@
   function headInner(t, i, errs) {
     const n = BK.bank.tasks.length, ong = t.due.rule === 'ongoing';
     return `<span class="bk-no">${i + 1}</span>
-      <div class="bk-body"><div class="bk-title">${t.title ? esc(t.title) : '<span class="muted">(مهمة بلا عنوان)</span>'}${errs.length ? ' <span class="badge bad">تحتاج تصحيحاً</span>' : ''}</div>
+      <div class="bk-body"><div class="bk-title">${t.title ? esc(t.title) : '<span class="muted">(مهمة بلا عنوان)</span>'}${t.from_suggested ? ` <span class="badge br bk-fromsg" title="${esc([t.source, t.ref].filter(Boolean).join(' — ') || 'من المهام المقترحة')}">من المقترحة</span>` : ''}${errs.length ? ' <span class="badge bad">تحتاج تصحيحاً</span>' : ''}</div>
         <div class="bk-meta">
           <span class="badge ${ong ? 'na' : 'ok'}">${ong ? 'مستمرة' : 'تسليم'}</span>
           <span><span class="k">الأسابيع:</span> ${esc(weeksText(t))}</span>
@@ -245,7 +258,7 @@
     row.classList.toggle('bad', errs.length > 0); row.classList.toggle('ong', t.due.rule === 'ongoing');
     const eb = row.querySelector('.bk-errs'); if (eb) eb.innerHTML = errs.map(x => `<div>${esc(x)}</div>`).join('');
   }
-  function changed() { markDirty(); paintStats(); schedulePreview(); }
+  function changed() { markDirty(); paintStats(); schedulePreview(); if (adoptedSig() !== BK.sgSig) paintSug(); }
 
   function setField(t, f, inp, row) {
     switch (f) {
@@ -322,7 +335,7 @@
       T.splice(i + 1, 0, c); openAndFocus(c.id); toast('نُسخت المهمة أسفل الأصل');
     }
     if (act === 'del') {
-      if (!confirm(`حذف المهمة «${t.title || 'بلا عنوان'}» من البنك؟\nلن تظهر في ملفات المدربين التي تُصدَر بعد الحفظ.`)) return;
+      if (!confirm(`حذف المهمة «${t.title || 'بلا عنوان'}» من البنك؟\nلن تظهر في ملفات المدربين التي تُصدَر بعد الحفظ.${t.from_suggested ? '\nوتعود متاحة للإضافة في «مهام مقترحة من مهام الجودة».' : ''}`)) return;
       T.splice(i, 1); BK.open.delete(t.id); paintTasks();
     }
     changed();
@@ -330,6 +343,79 @@
   function addTask() {
     const t = { id: newId(), title: '', weeks: [1, 19], weeks_mode: 'range', due: { rule: 'week_end' }, carry: true, eval: [], why: '', terms: [] };
     BK.bank.tasks.push(t); openAndFocus(t.id); changed();
+  }
+
+  // ═════════ المهام المقترحة (للقراءة فقط؛ الإضافة تنسخها إلى مهام القسم)
+  const adoptedSet = () => new Set(BK.bank.tasks.map(t => t.from_suggested).filter(Boolean));
+  const adoptedSig = () => BK.bank ? [...adoptedSet()].sort().join(',') : '';
+  const sgWeek = s => { const w = (s.weeks || []).filter(isInt); return w.length ? Math.min(...w) : 0; };
+  const norm = s => String(s ?? '').toLowerCase().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/[ً-ْـ]/g, '');
+  const sgSingle = s => s.weeks_mode === 'list' && (s.weeks || []).length === 1;
+  function sgVisible() {
+    const q = norm(BK.sgQ).trim(), ad = adoptedSet();
+    return BK.bank.suggested.filter(s => {
+      if (BK.sgHide && ad.has(s.id)) return false;
+      if (BK.sgTerm && (s.terms || []).length && !s.terms.includes(BK.sgTerm)) return false;
+      return !q || norm([s.title, s.why, s.source, s.ref, s.where].join(' ')).includes(q);
+    });
+  }
+  function paintSug() {
+    const out = el('bkSug'); if (!out || !BK.bank) return;
+    const S = BK.bank.suggested, ad = adoptedSet(); BK.sgSig = adoptedSig();
+    [...BK.sgSel].forEach(id => { if (ad.has(id) || !S.some(s => s.id === id)) BK.sgSel.delete(id); });
+    el('bkSugCount').textContent = S.length;
+    el('bkSugCard').classList.toggle('bk-sgempty', !S.length);
+    const termsUsed = BK.meta.terms.filter(x => x !== 'الصيفي' || S.some(s => (s.terms || []).includes(x)));
+    el('bkSugTerms').innerHTML = [['', 'كل الفصول'], ...termsUsed.map(x => [x, termName(x)])]
+      .map(([v, l]) => `<button type="button" class="chip ${BK.sgTerm === v ? 'on' : ''}" data-act="sg-term" data-term="${esc(v)}" aria-pressed="${BK.sgTerm === v}">${esc(l)}</button>`).join('');
+    if (!S.length) { out.innerHTML = '<div class="empty">لا توجد مهام مقترحة في البنك.</div>'; sgBar([]); return; }
+    const V = sgVisible(), groups = new Map();
+    V.forEach(s => { const k = sgWeek(s); if (!groups.has(k)) groups.set(k, []); groups.get(k).push(s); });
+    const filtering = !!BK.sgQ.trim();
+    out.innerHTML = V.length ? [...groups.keys()].sort((a, b) => a - b).map(k => {
+      const L = groups.get(k), nAd = L.filter(s => ad.has(s.id)).length;
+      const tb = [...new Set(L.flatMap(s => s.terms || []))].map(x => `<span class="badge mid">${esc(termName(x))}</span>`).join('');
+      return `<details class="bk-sgw" data-w="${k}" ${filtering || BK.sgOpen.has(k) ? 'open' : ''}><summary><span class="bk-no sm">${k === 0 ? 'ع' : k}</span><b>${esc(wl(k))}</b>${tb}
+        <span class="bk-pc">مقترحة: ${L.length}${nAd ? ` · <span class="ok">مضافة: ${nAd}</span>` : ''}</span></summary>${L.map(s => sgItem(s, ad.has(s.id))).join('')}</details>`;
+    }).join('') : '<div class="empty">لا توجد مهام مقترحة تطابق التصفية.</div>';
+    sgBar(V);
+  }
+  function sgItem(s, added) {
+    const ong = (s.due || {}).rule === 'ongoing', src = [s.source, s.ref].filter(Boolean).join(' — ');
+    return `<div class="bk-sg ${added ? 'added' : ''}" data-sid="${esc(s.id)}">
+      <label class="bk-sgck" title="${added ? 'مضافة إلى مهام القسم' : 'تحديد للإضافة'}"><input type="checkbox" data-sgpick="${esc(s.id)}" ${added ? 'disabled' : BK.sgSel.has(s.id) ? 'checked' : ''} aria-label="تحديد: ${esc(s.title)}"></label>
+      <div class="bk-body"><div class="bk-title">${esc(s.title)}</div>
+        <div class="bk-meta">
+          ${sgSingle(s) ? '' : `<span><span class="k">الأسابيع:</span> ${esc(weeksText(s))}</span>`}
+          <span><span class="k">الموعد:</span> ${esc(ong ? 'مستمرة — بلا موعد تسليم' : dueText(s.due))}</span>
+          ${s.where ? `<span class="badge na bk-where" title="أين تُنفَّذ">أين: ${esc(s.where)}</span>` : ''}
+          <span class="bk-evs"><span class="k">بنود التقييم:</span> ${evBadges(s.eval)}</span>
+          ${(s.terms || []).length ? `<span class="badge mid">${esc(termsText(s))}</span>` : ''}</div>
+        ${src ? `<div class="bk-src">${esc(src)}</div>` : ''}${s.why ? `<div class="bk-src">${esc(s.why)}</div>` : ''}</div>
+      <div class="bk-acts">${added ? '<button class="btn sm" disabled>✓ مضافة</button>'
+        : `<button class="btn sm t" data-act="sg-add" data-sid="${esc(s.id)}">إضافة إلى مهام القسم</button>`}</div></div>`;
+  }
+  function sgBar(V) {
+    const ad = adoptedSet(), n = BK.sgSel.size, avail = V.filter(s => !ad.has(s.id)).length;
+    const b = el('bkSugAddSel'); if (b) { b.disabled = !n; b.textContent = n ? `إضافة المحدد (${n})` : 'إضافة المحدد'; }
+    const i = el('bkSugInfo'); if (i) i.textContent = `المعروض ${V.length} من ${BK.bank.suggested.length}، والمتاح للإضافة منه ${avail}، والمضاف إلى مهام القسم ${ad.size}.`;
+  }
+  function adopt(ids) {
+    const ad = adoptedSet(), S = BK.bank.suggested, added = [];
+    ids.forEach(sid => {
+      const s = S.find(x => x.id === sid); if (!s || ad.has(sid)) return;
+      const c = JSON.parse(JSON.stringify(s));
+      const t = { id: newId(), title: c.title || '', weeks: c.weeks || [], weeks_mode: c.weeks_mode || 'list', due: c.due || { rule: 'week_end' },
+        carry: !!c.carry, eval: c.eval || [], why: c.why || '', terms: c.terms || [], from_suggested: sid, source: c.source || '', ref: c.ref || '' };
+      BK.bank.tasks.push(t); ad.add(sid); added.push(t); BK.sgSel.delete(sid);
+    });
+    if (!added.length) return;
+    if (added.length <= 3) added.forEach(t => BK.open.add(t.id));
+    paintTasks(); paintSug(); changed();
+    const row = taskRow(BK.bank.tasks.indexOf(added[0]));
+    if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    toast(added.length === 1 ? 'أُضيفت المهمة إلى مهام القسم؛ راجعها ثم اضغط «حفظ التغييرات»'
+      : `أُضيفت إلى نهاية مهام القسم ${nTasks(added.length)}؛ راجعها ثم اضغط «حفظ التغييرات»`);
   }
 
   // ═════════ الإعدادات
@@ -464,6 +550,18 @@
       if (act === 'open-all' || act === 'close-all') { BK.open = act === 'open-all' ? new Set(BK.bank.tasks.map(t => t.id)) : new Set(); paintTasks(); paintPrevHl(); return; }
       if (act === 'prev') return preview();
       if (act === 'pv-open' || act === 'pv-close') { R.querySelectorAll('#bkPrev details').forEach(d => d.open = act === 'pv-open'); return; }
+      if (act === 'sg-add') return adopt([b.dataset.sid]);
+      if (act === 'sg-addsel') return adopt(BK.bank.suggested.map(s => s.id).filter(id => BK.sgSel.has(id)));
+      if (act === 'sg-term') { BK.sgTerm = b.dataset.term || ''; return paintSug(); }
+      if (act === 'sg-all' || act === 'sg-none') {
+        const ad = adoptedSet();
+        if (act === 'sg-all') sgVisible().forEach(s => { if (!ad.has(s.id)) BK.sgSel.add(s.id); }); else BK.sgSel.clear();
+        return paintSug();
+      }
+      if (act === 'sg-open' || act === 'sg-close') {
+        R.querySelectorAll('#bkSug details').forEach(d => { d.open = act === 'sg-open'; });
+        BK.sgOpen = act === 'sg-open' ? new Set(BK.bank.suggested.map(sgWeek)) : new Set(); return;
+      }
       if (act === 'edel') {
         const i = +b.dataset.e, x = BK.bank.emergency[i]; if (!x) return;
         if (!confirm(`حذف المهمة الطارئة «${x.title}» (${semTitle(x.semester)}، ${wl(x.week)})؟\nيُطبَّق الحذف بعد الحفظ، ولا يتغير ما وُزّع من ملفات.`)) return;
@@ -473,14 +571,25 @@
     R.addEventListener('keydown', e => {
       if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('bk-hd')) { e.preventDefault(); taskAction('toggle', e.target.closest('.bk-task')); }
     });
-    R.addEventListener('input', e => { const t = e.target; if (t.dataset.f) onField(t, false); else if (t.dataset.s) onSetting(t); });
+    R.addEventListener('input', e => {
+      const t = e.target;
+      if (t.dataset.f) onField(t, false);
+      else if (t.dataset.s) onSetting(t);
+      else if (t.dataset.sg === 'q') { BK.sgQ = t.value; clearTimeout(BK.sgT); BK.sgT = setTimeout(paintSug, 200); }
+    });
     R.addEventListener('change', e => {
       const t = e.target;
       if (t.id === 'bkFile') return importBank(t.files && t.files[0]);
       if (t.id === 'bkSem') { BK.psem = t.value; BK.psemUser = true; BK.pOpen = new Set(); return preview(); }
+      if (t.dataset.sg === 'hide') { BK.sgHide = t.checked; return paintSug(); }
+      if (t.dataset.sgpick) { t.checked ? BK.sgSel.add(t.dataset.sgpick) : BK.sgSel.delete(t.dataset.sgpick); return sgBar(sgVisible()); }
       if (t.dataset.f) onField(t, true);
     });
-    R.addEventListener('toggle', e => { const d = e.target; if (d.tagName === 'DETAILS' && d.dataset.w != null) d.open ? BK.pOpen.add(+d.dataset.w) : BK.pOpen.delete(+d.dataset.w); }, true);
+    R.addEventListener('toggle', e => {
+      const d = e.target; if (d.tagName !== 'DETAILS' || d.dataset.w == null) return;
+      if (d.classList.contains('bk-sgw')) { if (!BK.sgQ.trim()) d.open ? BK.sgOpen.add(+d.dataset.w) : BK.sgOpen.delete(+d.dataset.w); return; }
+      d.open ? BK.pOpen.add(+d.dataset.w) : BK.pOpen.delete(+d.dataset.w);
+    }, true);
   }
 
   document.addEventListener('tasks:tab', e => {
