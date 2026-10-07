@@ -1,7 +1,7 @@
 /* عامل بايثون: يحمّل Pyodide والتطبيق، ويخزّن البيانات في IndexedDB على جهاز المستخدم. */
 const PYODIDE = "https://cdn.jsdelivr.net/pyodide/v0.29.5/full/";
 importScripts(PYODIDE + "pyodide.js");
-const VERSION = "20261007202606";
+const VERSION = "20261007211114";
 const WHEELS = ["blinker-1.9.0-py3-none-any.whl", "et_xmlfile-2.0.0-py3-none-any.whl", "flask-3.1.0-py3-none-any.whl", "hijridate-2.3.0-py3-none-any.whl", "itsdangerous-2.2.0-py3-none-any.whl", "openpyxl-3.1.5-py2.py3-none-any.whl", "werkzeug-3.1.3-py3-none-any.whl"];
 let py = null, handle = null, ready = null, syncing = Promise.resolve();
 

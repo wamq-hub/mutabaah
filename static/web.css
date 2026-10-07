@@ -1,6 +1,8 @@
 /* نسخة المتصفح: خط IBM Plex بدل DIN، وإخفاء ما يحتاج الجهاز نفسه، وشاشة التحميل وربط الملفات */
 :root, :root[data-theme="dark"] { --font: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, sans-serif; }
 .local-only { display: none !important; }
+.web-only { display: revert !important; }
+li.web-only { display: list-item !important; }
 
 header.top .acts { flex-wrap: wrap; justify-content: flex-end; }
 header.top .acts .btn { white-space: nowrap; }

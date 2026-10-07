@@ -1,0 +1,86 @@
+/* بنك مهام القسم — static/bank.js (يعتمد على متغيرات app.css فيعمل في الوضعين الفاتح والليلي) */
+#s-bank .bk-stats { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+#s-bank .bk-msg { margin-top: 10px; background: var(--bad-s); border-radius: 8px; padding: 7px 12px; font-size: .86rem; }
+#s-bank .card > h2 #bkDirty { font-size: .76rem; }
+
+/* عمودان على الشاشات العريضة: المهام يميناً والمعاينة يساراً */
+.bk-cols { display: grid; gap: 16px; align-items: start; }
+.bk-colmain, .bk-colside { min-width: 0; }
+@media (min-width: 1200px) {
+  .bk-cols { grid-template-columns: minmax(0, 1fr) 420px; }
+  .bk-colside { align-self: stretch; }   /* ليبقى عمود المعاينة بطول الصفحة فتعمل خاصية الالتصاق */
+  .bk-prevcard { position: sticky; top: 118px; max-height: calc(100vh - 136px); overflow: auto; }
+}
+
+/* ── المهمة في القائمة */
+.bk-task { border: 1px solid var(--line); border-inline-start: 4px solid var(--accent); border-radius: 10px; margin-bottom: 8px; background: var(--card); transition: border-color .15s, box-shadow .15s; }
+.bk-task.ong { border-inline-start-color: var(--steel); }
+.bk-task.bad { border-color: color-mix(in srgb, var(--bad) 55%, var(--line)); border-inline-start-color: var(--bad); }
+.bk-task.open { box-shadow: var(--shadow); }
+.bk-hd { display: flex; gap: 10px; align-items: flex-start; padding: 9px 12px; cursor: pointer; border-radius: 9px; }
+.bk-hd:hover { background: var(--soft); }
+.bk-hd:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.bk-task.open > .bk-hd { background: color-mix(in srgb, var(--accent) 7%, var(--card)); border-end-start-radius: 0; border-end-end-radius: 0; }
+.bk-no { flex: none; display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; font-size: .78rem; font-weight: 600; background: var(--tint); color: var(--teal); margin-top: 1px; }
+.bk-no.sm { width: 22px; height: 22px; font-size: .72rem; margin: 0; }
+.bk-body { flex: 1; min-width: 0; }
+.bk-title { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
+.bk-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; font-size: .79rem; color: var(--body); margin-top: 3px; }
+.bk-meta .k { color: var(--muted); }
+.bk-evs { display: inline-flex; flex-wrap: wrap; gap: 3px; align-items: center; }
+.bk-ev { display: inline-flex; min-width: 21px; height: 20px; padding: 0 5px; border-radius: 10px; align-items: center; justify-content: center; font-size: .72rem; font-weight: 600; cursor: help;
+  background: color-mix(in srgb, var(--brand) 12%, var(--card)); color: var(--brand); }
+:root[data-theme="dark"] .bk-ev { color: #CFE3F2; }
+.bk-acts { flex: none; display: flex; gap: 4px; align-items: center; }
+
+/* ── محرر المهمة */
+.bk-ed { border-top: 1px dashed var(--line); padding: 12px 14px 12px; background: color-mix(in srgb, var(--soft) 65%, var(--card)); border-radius: 0 0 9px 9px; }
+.bk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px 20px; }
+.bk-full { grid-column: 1 / -1; }
+.bk-fld { min-width: 0; }
+.bk-lb { font-size: .82rem; color: var(--body); font-weight: 600; margin-bottom: 5px; }
+.bk-seg { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.bk-help { display: block; color: var(--muted); font-size: .75rem; line-height: 1.55; margin-top: 4px; font-weight: 400; }
+#s-bank label.f .bk-help { margin-top: 1px; }
+.bk-range { gap: 10px; flex-wrap: nowrap; }
+.bk-n { min-width: 0; max-width: 150px; }
+.bk-wk { width: 90px; }
+.bk-ed select.in { min-width: 120px; padding-inline-end: 28px; }
+#s-bank label.f textarea { min-height: 54px; }
+:root[data-theme="dark"] #s-bank label.f textarea { border-color: #33424F; }
+.bk-evc { max-height: 300px; }
+.bk-grp { grid-column: 1 / -1; font-size: .76rem; font-weight: 600; color: var(--teal); padding: 2px 2px 0; }
+.bk-errs { margin-top: 10px; background: var(--bad-s); border-radius: 8px; padding: 6px 12px; font-size: .84rem; }
+.bk-errs:empty { display: none; }
+.bk-edf { margin-top: 10px; }
+
+/* ── المعاينة */
+.bk-sem { flex: 1; min-width: 180px; }
+#bkPrev { transition: opacity .15s; }
+#bkPrev.busy { opacity: .5; pointer-events: none; }
+.bk-pvsum { margin-bottom: 6px; }
+.bk-pv details { border: 1px solid var(--line); border-radius: 9px; margin-bottom: 6px; background: var(--card); }
+.bk-pv summary { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; list-style: none; font-size: .88rem; }
+.bk-pv summary::-webkit-details-marker { display: none; }
+.bk-pv summary::after { content: "▾"; color: var(--muted); transition: transform .15s; }
+.bk-pv details[open] summary::after { transform: rotate(180deg); }
+.bk-pv summary:hover { background: var(--soft); border-radius: 9px; }
+.bk-pc { margin-inline-start: auto; color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.bk-pc .bad { color: var(--bad); }
+.bk-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex: none; }
+.bk-dot[hidden] { display: none; }
+.bk-pv ul { margin: 0; padding: 0 10px 6px; list-style: none; }
+.bk-pv li { display: flex; flex-wrap: wrap; align-items: center; gap: 3px 8px; padding: 5px 4px; border-top: 1px solid var(--line-soft); font-size: .83rem; }
+.bk-pv li.hl { background: var(--tint); border-radius: 6px; }
+.bk-pt { flex: 1 1 180px; min-width: 0; color: var(--ink); }
+.bk-pd { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.bk-none { padding: 2px 12px 8px; }
+
+@media (max-width: 760px) {
+  .bk-hd { flex-wrap: wrap; padding: 8px 10px; }
+  .bk-acts { width: 100%; justify-content: flex-end; }
+  .bk-ed { padding: 10px; }
+  .bk-grid { grid-template-columns: minmax(0, 1fr); }
+  .bk-range .bk-n { max-width: none; }
+  #s-bank .card > h2 .sp { margin-inline-start: 0; width: 100%; }
+}

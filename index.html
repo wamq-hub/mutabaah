@@ -6,7 +6,9 @@
 <title>متابعة مهام أعضاء هيئة التدريب</title>
 <link rel="icon" href="/static/img/logo-color.png">
 <script>try{var q=(location.search.match(/theme=(dark|light)/)||[])[1];if(q)localStorage.setItem("tasks-theme",q);var t=localStorage.getItem("tasks-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/app.css?v=20261007202606"><link rel="stylesheet" href="/static/web.css?v=20261007202606"><meta name="robots" content="noindex, nofollow"><meta name="description" content="متابعة مهام أعضاء هيئة التدريب أسبوعاً بأسبوع: لوحة القسم والرسائل والتقارير، تعمل داخل المتصفح وبياناتك لا تغادر جهازك.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/app.css?v=20261007211114"><link rel="stylesheet" href="/static/web.css?v=20261007211114"><meta name="robots" content="noindex, nofollow"><meta name="description" content="متابعة مهام أعضاء هيئة التدريب أسبوعاً بأسبوع: لوحة القسم والرسائل والتقارير، تعمل داخل المتصفح وبياناتك لا تغادر جهازك.">
+<link rel="stylesheet" href="/static/semesters.css">
+<link rel="stylesheet" href="/static/bank.css">
 </head>
 <body>
 <header class="top"><div class="in">
@@ -14,6 +16,7 @@
   <div class="ttl"><h1>متابعة مهام أعضاء هيئة التدريب</h1><div class="sub" id="hSub">المهام الثابتة والطارئة والإبداعية — أسبوعاً بأسبوع</div></div>
   <div class="meta" id="hMeta"></div>
   <div class="acts">
+    <select class="in semsel" id="semSel" title="الفصل التدريبي المعروض"></select>
     <button class="btn ghost sm" id="bRefresh" title="إعادة قراءة ملفات المدربين">↻ تحديث</button>
     <button class="btn ghost sm" id="bTheme" title="الوضع الليلي / النهاري">🌙</button>
   </div>
@@ -24,6 +27,9 @@
   <button data-s="issue">الإصدار والقفل</button>
   <button data-s="msgs">المراسلات</button>
   <button data-s="reps">التقارير</button>
+  <button data-s="bank">بنك المهام</button>
+  <button data-s="sems">الفصول التدريبية</button>
+  <button data-s="guide">الدليل</button>
   <button data-s="cfg">الإعدادات</button>
 </div></nav>
 
@@ -173,6 +179,124 @@
   <div class="card"><h2>آخر التقارير</h2><div id="repList"></div></div>
 </section>
 
+<!-- ═════════ بنك المهام (static/bank.js) -->
+<section class="view" id="s-bank"></section>
+
+<!-- ═════════ الفصول التدريبية (static/semesters.js) -->
+<section class="view" id="s-sems"></section>
+
+<!-- ═════════ الدليل -->
+<section class="view" id="s-guide">
+  <div class="card">
+    <h2>كيف يعمل البرنامج</h2>
+    <p class="hint">لكل عضو هيئة تدريب ملف Excel واحد في كل فصل تدريبي، فيه ورقة لكل أسبوع. يعبّئ المدرب ملفه، ويعتمد رئيس القسم في الملف نفسه، والبرنامج <b>يقرأ الملفات فقط</b> ولا يعدّل عليها، ثم يعرض المؤشرات ويجهّز الرسائل والتقارير.</p>
+    <div class="flow">
+      <div class="st"><b>1</b><span>بيانات القسم</span><small>الإعدادات</small></div>
+      <div class="st"><b>2</b><span>مهام القسم</span><small>بنك المهام</small></div>
+      <div class="st"><b>3</b><span>الفصل وتقويمه</span><small>الفصول التدريبية</small></div>
+      <div class="st"><b>4</b><span>ملف لكل مدرب</span><small>الإصدار والقفل</small></div>
+      <div class="st"><b>5</b><span>ربط الملفات</span><small>المدربون والملفات</small></div>
+      <div class="st"><b>6</b><span>المتابعة الأسبوعية</span><small>اللوحة والمراسلات والتقارير</small></div>
+      <div class="st"><b>7</b><span>القفل والأرشفة</span><small>نهاية الأسبوع والفصل</small></div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>أين توضع ملفات المدربين؟</h2>
+      <p class="hint">لا يلزم ترتيب ثابت للمجلدات: يبقى ملف كل مدرب في مكانه المعتاد (مجلده في المفكرة الإشرافية، أو مجلد مشترك على OneDrive، أو أي مجلد). المهم أن يُربط كل ملف بصاحبه في البرنامج مرة واحدة لكل فصل.</p>
+      <pre class="tree">أي مجلد يختاره القسم/
+├─ مجلد المدرب الأول/ (أي مكان)
+│   └─ متابعة مهام - م. الاسم.xlsx   ← يُربط بالمدرب
+├─ مجلد آخر/ ...
+│   └─ متابعة مهام - أ. الاسم.xlsx   ← يُربط بالمدرب
+└─ ...</pre>
+      <h3>طرق الربط</h3>
+      <ul class="gl">
+        <li class="local-only"><b>المسار:</b> في «المدربون والملفات» اكتب مسار الملف أو اضغط «استعراض…». يُقرأ الملف مباشرة كلما فُتحت اللوحة.</li>
+        <li class="local-only"><b>البحث في مجلد:</b> اختر مجلداً كبيراً (مثل المفكرة الإشرافية) فيجد البرنامج ملفات القالب داخله ويعرض اسم صاحب كل ملف لتربطه بضغطة.</li>
+        <li class="web-only"><b>ربط ملف من جهازك:</b> زر في بطاقة المدرب، ويُعاد قراءته كلما تغيّر عند الضغط على «تحديث».</li>
+        <li class="web-only"><b>اختيار مجلد المدربين:</b> يبحث في المجلد وما تحته ويربط كل ملف بصاحبه.</li>
+        <li><b>السحب والإفلات:</b> للملف الذي يصلك بالبريد؛ تُحفظ منه نسخة ثابتة في البرنامج، وتُحدَّث بإفلات النسخة الأحدث.</li>
+        <li><b>إنشاء ملفه من القالب:</b> يُنشئ ملف المدرب الجديد ويربطه تلقائياً.</li>
+      </ul>
+      <p class="hint">الربط يُحفظ لكل فصل على حدة: عند تفعيل فصل جديد تبدأ ملفاته فارغة، وتبقى ملفات الفصل السابق مربوطة به.</p>
+    </div>
+
+    <div class="card">
+      <h2>ما يُنشئه البرنامج من ملفات</h2>
+      <h3>عند الإصدار</h3>
+      <pre class="tree">المجلد الذي تختاره/
+└─ إصدار ملفات المتابعة 2026-10-07/
+    ├─ متابعة مهام - م. الاسم الأول.xlsx
+    └─ متابعة مهام - أ. الاسم الثاني.xlsx
++ ملف zip يجمعها للتنزيل أو الإرسال</pre>
+      <p class="hint">ثم ينقل رئيس القسم كل ملف إلى مكان صاحبه ويربطه، أو يختار «ربط كل مدرب بملفه الجديد».</p>
+      <h3>عند القفل</h3>
+      <pre class="tree">مجلد ملف المدرب/
+├─ متابعة مهام - م. الاسم.xlsx                    (الأصل لا يتغير)
+└─ متابعة مهام - م. الاسم - مقفل حتى الأسبوع 7.xlsx   (النسخة المقفلة)</pre>
+      <p class="hint">تُسلَّم النسخة المقفلة للمدرب بدل ملفه، ثم يُربط المدرب بها.</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>محتوى ملف المدرب</h2>
+      <table class="t">
+        <thead><tr><th class="r">الورقة</th><th class="r">ما فيها</th></tr></thead>
+        <tbody>
+          <tr><td class="r"><b>الملخص</b></td><td class="r">اسم المدرب وقسمه، ونسبة الإنجاز وسرعته لكل أسبوع وللفصل</td></tr>
+          <tr><td class="r"><b>طريقة التعبئة</b></td><td class="r">خطوات المدرب ورئيس القسم ومعنى سرعة الإنجاز</td></tr>
+          <tr><td class="r"><b>أهمية المهام</b></td><td class="r">بند نموذج تقييم الأداء لكل مهمة وسببها من دليل المدرب</td></tr>
+          <tr><td class="r"><b>العودة، أسبوع 1 … أسبوع 19</b></td><td class="r">ورقة لكل أسبوع: المهام الثابتة، والمرحّلة، والطارئة، والإبداعية</td></tr>
+          <tr><td class="r muted">التقويم، السجل (مخفيتان)</td><td class="r muted">أيام العمل والإجازات، وسجل الترحيل — لا تُعدَّلان</td></tr>
+        </tbody>
+      </table>
+      <h3>في ورقة الأسبوع</h3>
+      <ul class="gl">
+        <li><b>يعبّئه المدرب:</b> الحالة، وتاريخ الإنجاز، والشاهد (رابط أو صورة).</li>
+        <li><b>يعبّئه رئيس القسم:</b> الاعتماد، وشاهده، وتعديل السرعة، والملاحظات.</li>
+        <li><b>تلقائي:</b> سرعة الإنجاز، والمهام المرحّلة، ونسبة الأسبوع.</li>
+        <li><b>أسطر احتياطية مخفية</b> تحت كل قسم لإضافة مهمة: حدّد السطرين حولها ← زر الفأرة الأيمن ← «إظهار».</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>بيانات البرنامج نفسه</h2>
+      <div class="local-only">
+        <p class="hint">يحفظ البرنامج إعداداته ونتائجه في مجلد <b>data</b> داخل مجلد البرنامج. انسخ هذا المجلد لأخذ نسخة احتياطية أو لنقل البرنامج إلى جهاز آخر.</p>
+        <pre class="tree">data/
+├─ config.json        بيانات القسم والفصل النشط
+├─ trainers.json      المدربون وملف كل منهم في كل فصل
+├─ bank.json          بنك مهام القسم
+├─ semesters/         الفصول التدريبية وتقاويمها
+├─ uploads/الفصل/     النسخ المرفوعة بالسحب والإفلات
+├─ archive/الفصل/     نسخ الفصول المؤرشفة (ثابتة)
+├─ issued/            ملفات الإصدار والقفل
+└─ reports/التاريخ/   التقارير (HTML وPDF)</pre>
+      </div>
+      <p class="hint web-only">في نسخة المتصفح تُحفظ البيانات في هذا المتصفح فقط ولا تُرسل لأي خادم. استخدم «نسخة احتياطية» في الرأس بعد كل تحديث مهم، و«استعادة» لنقلها إلى جهاز أو متصفح آخر.</p>
+      <h3>نهاية الفصل</h3>
+      <ul class="gl">
+        <li>اضغط «أرشفة الفصل» في «الفصول التدريبية»: تُحفظ نسخة ثابتة من ملف كل مدرب، فتبقى النتائج والتقارير ولو تغيّرت الملفات أو حُذفت.</li>
+        <li>أضف الفصل الجديد وفعّله، ثم أصدر ملفاته. نتائج المدرب في الفصول السابقة تظهر في صفحة تفاصيله للمقارنة.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>أسئلة شائعة</h2>
+    <ul class="gl">
+      <li><b>غيّر المدرب اسم ملفه أو نقله:</b> تظهر رسالة «الملف غير موجود»؛ اربطه من جديد من «المدربون والملفات».</li>
+      <li><b>مدرب جديد في منتصف الفصل:</b> أضفه، ثم «إنشاء ملفه من القالب» أو أصدر له ملفاً من «الإصدار والقفل».</li>
+      <li><b>إجازة طارئة أو تغيير في التقويم:</b> عدّل الفصل في «الفصول التدريبية»؛ يسري التعديل على الملفات التي تُصدر بعده.</li>
+      <li><b>مهمة جديدة لكل المدربين:</b> أضفها في «بنك المهام» لتدخل الملفات القادمة، أو في الأسطر الاحتياطية المخفية في الملفات الحالية.</li>
+      <li><b>نسيان الرقم السري:</b> لا يمكن استرجاعه؛ أصدر ملفاً جديداً بالقالب وانقل إليه ما عُبّئ.</li>
+    </ul>
+  </div>
+</section>
+
 <!-- ═════════ الإعدادات -->
 <section class="view" id="s-cfg">
   <div class="card">
@@ -206,7 +330,7 @@
 <div class="toast" id="toast"></div>
 <div id="web-boot"><div class="box"><img src="/static/img/logo-color.png" alt="" class="lg"><div class="spin"></div><h2>متابعة مهام أعضاء هيئة التدريب</h2><p id="web-boot-text">جارٍ التحميل…</p><p>يُحمَّل البرنامج كاملاً عند الفتح الأول (قرابة 30 ميجابايت)، ويكون أسرع بعد ذلك. تبقى البيانات كلها في متصفحك ولا تُرسل إلى أي خادم.</p></div></div><script>/* صفحة البرنامج: تشغّل عامل بايثون، وتجيب طلبات عامل الخدمة منه، ثم تحمّل الواجهة. */
 (async function () {
-  const VERSION = "20261007202606";
+  const VERSION = "20261007211114";
   const ov = document.getElementById("web-boot"), txt = document.getElementById("web-boot-text");
   const fail = m => { ov.classList.add("err"); txt.textContent = m; };
   if (!("serviceWorker" in navigator) || !window.indexedDB) {
@@ -250,5 +374,7 @@
   ov.remove();
 })();
 </script>
+<script src="/static/semesters.js"></script>
+<script src="/static/bank.js"></script>
 </body>
 </html>

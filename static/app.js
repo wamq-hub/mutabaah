@@ -23,6 +23,8 @@ function showTab(k) {
   if (k === 'reps') loadReports();
   if (k === 'issue') fillIssue();
   if (k === 'msgs' && !$('#msgOut').innerHTML) loadMsgs();
+  // صفحتا «الفصول التدريبية» و«بنك المهام» في ملفين مستقلين تستمعان لهذا الحدث
+  document.dispatchEvent(new CustomEvent('tasks:tab', { detail: k }));
   try { history.replaceState(null, '', '#' + k); } catch (e) { }
 }
 $('#nav').onclick = e => { const b = e.target.closest('button'); if (b) showTab(b.dataset.s); };
@@ -37,8 +39,25 @@ async function loadState() {
   $('#cDept').value = c.dept; $('#cCollege').value = c.college; $('#cHead').value = c.head_name; $('#cToday').value = c.today || '';
   $('#cSem').innerHTML = STATE.semesters.map(s => `<option ${s === c.semester ? 'selected' : ''}>${s}</option>`).join('');
   $('#nTr').textContent = STATE.trainers.length;
+  fillSemSel();
   renderTrainers();
 }
+
+// ═════════ الفصل التدريبي النشط (مُبدّل الرأس)
+function fillSemSel() {
+  const L = STATE.semester_list || [];
+  $('#semSel').innerHTML = L.map(s => `<option value="${esc(s.id)}" ${s.id === STATE.active_semester ? 'selected' : ''}>${esc(s.title)}</option>`).join('');
+}
+async function activateSemester(id) {
+  const r = await post('/api/semesters/' + encodeURIComponent(id) + '/activate', {});
+  if (!r.ok) { toast(r.error, 1); return false; }
+  WEEK = null; $('#msgOut').innerHTML = '';
+  await loadState(); await loadDash(); renderTrainers(); if (typeof fillIssue === 'function') fillIssue();
+  document.dispatchEvent(new CustomEvent('tasks:semester', { detail: id }));
+  toast('الفصل المعروض: ' + ((STATE.semester_list || []).find(s => s.id === id) || {}).title);
+  return true;
+}
+$('#semSel').onchange = e => activateSemester(e.target.value);
 
 // ═════════ لوحة القسم
 async function loadDash() {

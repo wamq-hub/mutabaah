@@ -221,3 +221,19 @@ table.t tr.tot td { font-weight: 600; background: color-mix(in srgb, var(--brand
 label.f textarea { border: 1px solid #CFD8DE; border-radius: 8px; padding: 7px 10px; background: var(--input); color: var(--ink); resize: vertical; }
 .result { margin-top: 12px; border: 1px solid color-mix(in srgb, var(--ok) 35%, var(--line)); background: var(--ok-s); border-radius: 10px; padding: 10px 14px; }
 .result ul { margin: 6px 0 0; padding-inline-start: 18px; font-size: .84rem; }
+
+/* مُبدّل الفصل في الرأس */
+header.top select.semsel { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.45); border-radius: 8px; padding: 4px 8px; font-size: .8rem; max-width: 210px; }
+header.top select.semsel option { color: #1B2733; }
+@media (max-width: 760px) { header.top select.semsel { max-width: 130px; } }
+
+/* ── الدليل */
+.web-only { display: none; }
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-top: 8px; }
+.flow .st { position: relative; border: 1px solid var(--line); border-radius: 10px; padding: 10px 10px 8px; background: color-mix(in srgb, var(--accent) 5%, var(--card)); display: flex; flex-direction: column; gap: 2px; }
+.flow .st b { display: inline-flex; width: 26px; height: 26px; border-radius: 50%; align-items: center; justify-content: center; color: #fff; background: linear-gradient(135deg, var(--accent), var(--brand)); font-size: .82rem; }
+.flow .st span { font-weight: 600; font-size: .9rem; color: var(--ink); }
+.flow .st small { color: var(--muted); font-size: .74rem; }
+pre.tree { direction: rtl; text-align: right; white-space: pre; overflow-x: auto; background: var(--soft); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-family: inherit; font-size: .82rem; line-height: 1.75; color: var(--body); margin: 6px 0 10px; }
+ul.gl { margin: 4px 0 8px; padding-inline-start: 20px; line-height: 1.9; font-size: .88rem; color: var(--body); }
+ul.gl li::marker { color: var(--accent); }
