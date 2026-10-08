@@ -6,8 +6,24 @@
     meta: { terms: ['الأول', 'الثاني', 'الصيفي'], weekdays: ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'] },
     psem: null, psemUser: false, pOpen: new Set(), pTimer: null, pSeq: 0, bound: false, onTab: false,
     // المهام المقترحة: المحدد للإضافة، والبحث، وتصفية الفصل، وإخفاء المضافة، والأسابيع المفتوحة
-    sgSel: new Set(), sgQ: '', sgTerm: '', sgHide: false, sgOpen: new Set(), sgSig: ''
+    sgSel: new Set(), sgQ: '', sgTerm: '', sgHide: false, sgOpen: new Set(), sgSig: '',
+    // البطاقات المطوية (تُحفظ في المتصفح)، ومجموعات الطارئة المفتوحة (null = الفصل النشط فقط)
+    fold: null, emOpen: null
   };
+  const FOLD_KEY = 'tasks-bank-fold', FOLD_DEFAULT = ['set', 'em', 'prev'];
+  function loadFold() {
+    let v = null; try { v = JSON.parse(localStorage.getItem(FOLD_KEY)); } catch (e) { v = null; }
+    BK.fold = new Set(Array.isArray(v) ? v : FOLD_DEFAULT);
+  }
+  function saveFold() { try { localStorage.setItem(FOLD_KEY, JSON.stringify([...BK.fold])); } catch (e) { /* تخزين المتصفح غير متاح */ } }
+  const foldBtn = k => `<button class="bk-fold" data-act="fold" data-fold="${k}" aria-label="طي أو فتح القسم"></button>`;
+  function paintFold() {
+    root().querySelectorAll('.card[data-card]').forEach(c => {
+      const f = BK.fold.has(c.dataset.card); c.classList.toggle('folded', f);
+      const b = c.querySelector('.bk-fold'); if (b) { b.setAttribute('aria-expanded', String(!f)); b.title = f ? 'فتح' : 'طي'; }
+    });
+  }
+  function setFold(k, folded) { folded ? BK.fold.add(k) : BK.fold.delete(k); saveFold(); paintFold(); }
   const COUNTS = [
     ['emergency_rows', 'أسطر المهام الطارئة الظاهرة في كل أسبوع', 'أسطر فارغة يكتب فيها رئيس القسم ما يرد من مهام طارئة؛ وإن سُجّل للأسبوع عدد أكبر ظهرت كلها.'],
     ['emergency_spare_rows', 'أسطر طارئة احتياطية مخفية', 'أسطر مخفية تحت المهام الطارئة تُظهَر عند الحاجة إلى المزيد.'],
@@ -119,7 +135,8 @@
       }
     }
     if (!BK.psemUser || !semList().some(s => s.id === BK.psem)) { BK.psem = activeSem(); BK.psemUser = false; }
-    R.innerHTML = layout(); paintAll(); preview();
+    if (!BK.fold) loadFold();
+    R.innerHTML = layout(); paintAll(); paintFold(); preview();
   }
   function layout() {
     return `<div class="card bk-head">
@@ -132,12 +149,12 @@
       <p class="hint">يُعرَّف هنا ما يتكرر من مهام القسم كل فصل، ومنه تُولَّد ملفات المدربين. يُطبَّق أي تعديل بعد الحفظ على الملفات التي تُصدَر لاحقاً من تبويب «الإصدار والقفل»، أما الملفات الموزعة سابقاً فلا تتغير. ويمكن تصدير البنك ملفاً ومشاركته مع الأقسام الأخرى لاستيراده لديهم.</p>
       <div id="bkStats" class="bk-stats"></div><div id="bkMsg"></div></div>
     <div class="bk-cols"><div class="bk-colmain">
-      <div class="card"><h2>مهام البنك <span class="badge br" id="bkCount"></span>
+      <div class="card" data-card="tasks"><h2>${foldBtn('tasks')}مهام البنك <span class="badge br" id="bkCount"></span>
         <span class="sp"><button class="btn sm" data-act="open-all">فتح الكل</button><button class="btn sm" data-act="close-all">إغلاق الكل</button></span></h2>
         <p class="hint">ترتيب المهام هنا هو ترتيبها في ورقة كل أسبوع. اضغط على المهمة لتعديلها، واستعمل ▲▼ لتغيير ترتيبها.</p>
         <div id="bkTasks"></div>
         <div class="row" style="margin-top:10px"><button class="btn sm t" data-act="add">+ إضافة مهمة</button></div></div>
-      <div class="card" id="bkSugCard"><h2>مهام مقترحة من مهام الجودة <span class="badge br" id="bkSugCount"></span>
+      <div class="card" id="bkSugCard" data-card="sug"><h2>${foldBtn('sug')}مهام مقترحة من مهام الجودة <span class="badge br" id="bkSugCount"></span>
         <span class="sp"><button class="btn sm p" data-act="sg-addsel" id="bkSugAddSel" disabled>إضافة المحدد</button></span></h2>
         <p class="hint">مهام مأخوذة من «المفكرة الإشرافية» ومن «تقويم أعمال جودة التدريب»، وهي مقترحات فقط: لا تدخل ملفات المدربين حتى يضيفها رئيس القسم إلى مهام القسم. والإضافة تنسخ المهمة إلى قائمة «مهام البنك» أعلاه حيث يمكن تعديل أسابيعها وموعدها وسائر حقولها، ثم تُعتمد بزر «حفظ التغييرات».</p>
         <div class="bk-sgf">
@@ -147,13 +164,13 @@
         <div class="row bk-sgbar"><button class="btn sm" data-act="sg-all">تحديد الكل</button><button class="btn sm" data-act="sg-none">إلغاء التحديد</button>
           <button class="btn sm" data-act="sg-open">توسيع الكل</button><button class="btn sm" data-act="sg-close">طي الكل</button><span class="muted" id="bkSugInfo"></span></div>
         <div id="bkSug"></div></div>
-      <div class="card"><h2>إعدادات ملفات المدربين</h2>
+      <div class="card" data-card="set"><h2>${foldBtn('set')}إعدادات ملفات المدربين</h2>
         <p class="hint">تُحفظ مع البنك بزر «حفظ التغييرات»، وتُطبَّق على الملفات التي تُصدَر بعد الحفظ.</p><div id="bkSet"></div></div>
-      <div class="card"><h2>المهام الطارئة المسجلة <span class="badge br" id="bkEmCount"></span></h2>
+      <div class="card" data-card="em"><h2>${foldBtn('em')}المهام الطارئة المسجلة <span class="badge br" id="bkEmCount"></span></h2>
         <p class="hint">المهام الطارئة تخص فصلاً تدريبياً بعينه وأسبوعاً منه، وتُعبَّأ مسبقاً في ملفات ذلك الفصل فقط عند إصدارها. يُحذف ما لم يعد مطلوباً، ويُطبَّق الحذف بعد الحفظ.</p>
         <div id="bkEm"></div></div>
     </div><div class="bk-colside">
-      <div class="card bk-prevcard"><h2>معاينة الفصل <span class="sp"><button class="btn sm" data-act="prev">تحديث المعاينة</button></span></h2>
+      <div class="card bk-prevcard" data-card="prev"><h2>${foldBtn('prev')}معاينة الفصل <span class="sp"><button class="btn sm" data-act="prev">تحديث المعاينة</button></span></h2>
         <div class="row"><select class="in bk-sem" id="bkSem" aria-label="الفصل التدريبي"></select>
           <button class="btn sm" data-act="pv-open">توسيع الكل</button><button class="btn sm" data-act="pv-close">طي الكل</button></div>
         <p class="hint">مهام كل أسبوع في الفصل المختار كما ستظهر في ملفات المدربين، وتشمل التعديلات غير المحفوظة. المهام المفتوحة للتعديل مظللة.</p>
@@ -318,7 +335,7 @@
     return 'T' + n;
   }
   function openAndFocus(id) {
-    BK.open.add(id); paintTasks();
+    BK.open.add(id); paintTasks(); if (BK.fold.has('tasks')) setFold('tasks', false);
     const i = BK.bank.tasks.findIndex(t => t.id === id), row = taskRow(i);
     if (row) { row.scrollIntoView({ block: 'center', behavior: 'smooth' }); const inp = row.querySelector('[data-f=title]'); if (inp) setTimeout(() => inp.focus({ preventScroll: true }), 250); }
   }
@@ -411,7 +428,7 @@
     });
     if (!added.length) return;
     if (added.length <= 3) added.forEach(t => BK.open.add(t.id));
-    paintTasks(); paintSug(); changed();
+    paintTasks(); paintSug(); changed(); if (BK.fold.has('tasks')) setFold('tasks', false);
     const row = taskRow(BK.bank.tasks.indexOf(added[0]));
     if (row) row.scrollIntoView({ block: 'center', behavior: 'smooth' });
     toast(added.length === 1 ? 'أُضيفت المهمة إلى مهام القسم؛ راجعها ثم اضغط «حفظ التغييرات»'
@@ -445,12 +462,13 @@
     el('bkEmCount').textContent = E.length;
     if (!E.length) { el('bkEm').innerHTML = '<div class="empty">لا توجد مهام طارئة مسجلة.</div>'; return; }
     const order = semList().map(s => s.id), keys = [...groups.keys()].sort((x, y) => (order.indexOf(x) + 1 || 99) - (order.indexOf(y) + 1 || 99));
+    if (!BK.emOpen) BK.emOpen = new Set([activeSem()]);
     el('bkEm').innerHTML = keys.map(k => {
       const L = groups.get(k).sort((x, y) => (x[0].week ?? 0) - (y[0].week ?? 0));
-      return `<h3>${esc(semTitle(k))} <span class="badge br">${L.length}</span></h3><div class="wrap"><table class="t"><thead><tr>
+      return `<details class="bk-emg" data-sem="${esc(k)}" ${BK.emOpen.has(k) ? 'open' : ''}><summary><b>${esc(semTitle(k))}</b> <span class="badge br">${L.length}</span></summary><div class="wrap"><table class="t"><thead><tr>
         <th class="r">المهمة</th><th>الأسبوع</th><th>آخر موعد</th><th>بنود التقييم</th><th></th></tr></thead><tbody>${L.map(([e, i]) =>
         `<tr><td class="r">${esc(e.title)}</td><td>${esc(isInt(e.week) ? wl(e.week) : '—')}</td><td>${esc(dueText(e.due))}</td><td class="bk-evs">${evBadges(e.eval)}</td>
-         <td><button class="btn sm danger" data-act="edel" data-e="${i}">حذف</button></td></tr>`).join('')}</tbody></table></div>`;
+         <td><button class="btn sm danger" data-act="edel" data-e="${i}">حذف</button></td></tr>`).join('')}</tbody></table></div></details>`;
     }).join('');
   }
 
@@ -494,6 +512,7 @@
     const bad = BK.bank.tasks.filter(t => validate(t).length), se = settingsErrors();
     if (bad.length || se.length) {
       bad.forEach(t => BK.open.add(t.id)); paintTasks(); paintSetErr();
+      if (bad.length) setFold('tasks', false); if (se.length) setFold('set', false);
       setMsg(`<div class="err bk-msg">لم يُحفظ البنك: ${bad.length ? `عدد المهام التي تحتاج تصحيحاً ${bad.length}` : ''}${bad.length && se.length ? '، و' : ''}${se.length ? 'في الإعدادات أخطاء' : ''}.</div>`);
       const f = root().querySelector('.bk-task.bad') || el('bkSetErr'); if (f) f.scrollIntoView({ block: 'center', behavior: 'smooth' });
       toast('صحّح الأخطاء قبل الحفظ', 1); return;
@@ -539,9 +558,13 @@
   function bind(R) {
     if (BK.bound) return; BK.bound = true;
     R.addEventListener('click', e => {
+      // الضغط على عنوان بطاقة قابلة للطي (خارج أزرارها) يطويها أو يفتحها
+      const h = e.target.closest('.card[data-card] > h2');
+      if (h && !e.target.closest('button, input, select, label, a, .sp')) return setFold(h.parentElement.dataset.card, !BK.fold.has(h.parentElement.dataset.card));
       const b = e.target.closest('[data-act]'); if (!b || b.disabled || !R.contains(b)) return;
       const act = b.dataset.act, row = b.closest('.bk-task');
       if (row && ['toggle', 'up', 'down', 'copy', 'del'].includes(act)) return taskAction(act, row);
+      if (act === 'fold') return setFold(b.dataset.fold, !BK.fold.has(b.dataset.fold));
       if (act === 'retry') return render();
       if (act === 'save') return save();
       if (act === 'add') return addTask();
@@ -586,7 +609,9 @@
       if (t.dataset.f) onField(t, true);
     });
     R.addEventListener('toggle', e => {
-      const d = e.target; if (d.tagName !== 'DETAILS' || d.dataset.w == null) return;
+      const d = e.target; if (d.tagName !== 'DETAILS') return;
+      if (d.classList.contains('bk-emg')) { d.open ? BK.emOpen.add(d.dataset.sem) : BK.emOpen.delete(d.dataset.sem); return; }
+      if (d.dataset.w == null) return;
       if (d.classList.contains('bk-sgw')) { if (!BK.sgQ.trim()) d.open ? BK.sgOpen.add(+d.dataset.w) : BK.sgOpen.delete(+d.dataset.w); return; }
       d.open ? BK.pOpen.add(+d.dataset.w) : BK.pOpen.delete(+d.dataset.w);
     }, true);

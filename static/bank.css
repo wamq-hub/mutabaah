@@ -100,6 +100,29 @@
 .bk-src { color: var(--muted); font-size: .74rem; line-height: 1.5; margin-top: 2px; overflow-wrap: anywhere; }
 .bk-where { font-weight: 600; }
 
+/* طي البطاقات: العنوان يبقى ظاهراً، والضغط عليه أو على السهم يطوي البطاقة أو يفتحها */
+#s-bank .card[data-card] > h2 { cursor: pointer; user-select: none; }
+#s-bank .card[data-card] > h2 .sp, #s-bank .card[data-card] > h2 button, #s-bank .card[data-card] > h2 input { cursor: auto; }
+.bk-fold { order: 9; margin-inline-start: 4px; width: 28px; height: 28px; flex: none; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--card); color: var(--muted); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+.bk-fold::after { content: "▾"; font-size: .95rem; transform: rotate(180deg); transition: transform .15s; }
+.bk-fold:hover { background: var(--soft); color: var(--brand); }
+.bk-fold:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+#s-bank .card.folded > h2 { margin-bottom: 0; }
+#s-bank .card.folded > h2 .sp { display: none; }
+#s-bank .card.folded > :not(h2) { display: none !important; }
+#s-bank .card.folded .bk-fold::after { transform: none; }
+#s-bank .card[data-card] > h2:not(:has(.sp)) .bk-fold, #s-bank .card.folded > h2 .bk-fold { margin-inline-start: auto; }
+/* مجموعات المهام الطارئة لكل فصل */
+.bk-emg { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: var(--card); }
+.bk-emg > summary { display: flex; align-items: center; gap: 8px; padding: 8px 12px; cursor: pointer; list-style: none; color: var(--brand); font-size: .94rem; border-radius: 10px; }
+.bk-emg > summary::-webkit-details-marker { display: none; }
+.bk-emg > summary::after { content: "▾"; color: var(--muted); margin-inline-start: auto; transition: transform .15s; }
+.bk-emg[open] > summary::after { transform: rotate(180deg); }
+.bk-emg > summary:hover { background: var(--soft); }
+.bk-emg > .wrap { padding: 0 10px 10px; }
+:root[data-theme="dark"] .bk-emg > summary { color: #CFE3F2; }
+
 @media (max-width: 760px) {
   .bk-sg { flex-wrap: wrap; padding: 8px 10px; }
   .bk-sg .bk-body { flex-basis: calc(100% - 30px); }

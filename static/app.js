@@ -204,6 +204,12 @@ $('#ov').onclick = e => { if (e.target.id === 'ov') closeTrainer(); };
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeTrainer(); });
 
 // ═════════ المدربون والملفات
+const HONOR_TXT = { 'أ': 'أستاذ', 'م': 'مهندس', 'د': 'دكتور' };
+const honorAutoOf = n => { const m = String(n || '').match(/^\s*(?:(الأستاذ|الاستاذ|أستاذ|المهندس|مهندس|الدكتور|دكتور)\s|([أامد])\s*[./]|([أامد])\s)/); if (!m) return '';
+  if (m[1]) return /هندس/.test(m[1]) ? 'م' : /دكتور/.test(m[1]) ? 'د' : 'أ'; const c = m[2] || m[3]; return c === 'ا' ? 'أ' : c; };
+const honorSelect = (cls, v, name) => { const a = honorAutoOf(name);
+  return `<select class="in ${cls}" title="اللقب في الرسائل والتقارير"><option value="" ${!v ? 'selected' : ''}>اللقب: تلقائي (${HONOR_TXT[a || 'أ']})</option>`
+    + Object.entries(HONOR_TXT).map(([k, t]) => `<option value="${k}" ${v === k ? 'selected' : ''}>${t}</option>`).join('') + '</select>'; };
 function renderTrainers() {
   const ts = STATE.trainers;
   if (!ts.length) { $('#trList').innerHTML = '<div class="empty">لا يوجد مدربون بعد.</div>'; return; }
@@ -212,7 +218,7 @@ function renderTrainers() {
     const state = !t.path && t.mode !== 'upload' ? '<span class="badge na">لم يُحدَّد الملف</span>' : s.error ? `<span class="badge bad">${esc(s.error)}</span>` : t.mode === 'upload' ? '<span class="badge mid">نسخة مرفوعة</span>' : '<span class="badge ok">مربوط بمسار الملف</span>';
     return `<div class="person" data-id="${t.id}">
     <div class="hd"><span class="av">${esc(initials(t.name))}</span>
-      <input class="in tName" value="${esc(t.name)}" style="min-width:220px;font-weight:600"><input class="in tEmail ltr" value="${esc(t.email || '')}" placeholder="البريد الإلكتروني" style="min-width:210px">
+      <input class="in tName" value="${esc(t.name)}" style="min-width:220px;font-weight:600"><input class="in tEmail ltr" value="${esc(t.email || '')}" placeholder="البريد الإلكتروني" style="min-width:210px">${honorSelect('tHonor', t.honor || '', t.name)}
       ${state}<div class="sp"><button class="btn sm p" data-a="save">حفظ</button><button class="btn sm" data-a="up" title="تقديم">▲</button><button class="btn sm" data-a="down" title="تأخير">▼</button><button class="btn sm danger" data-a="del">حذف</button></div></div>
     <div class="pathrow local-only"><select class="in tMode"><option value="path" ${t.mode !== 'upload' ? 'selected' : ''}>مسار الملف (قراءة مباشرة)</option><option value="upload" ${t.mode === 'upload' ? 'selected' : ''}>نسخة مرفوعة</option></select>
       <input class="in ltr tPath" value="${esc(t.path || '')}" placeholder="C:\\...\\متابعة مهام - اسم المدرب.xlsx">
@@ -223,13 +229,13 @@ function renderTrainers() {
 }
 $('#bAdd').onclick = async () => {
   const name = $('#nName').value.trim(); if (!name) return toast('اكتب اسم المدرب', 1);
-  const r = await post('/api/trainers', { name, email: $('#nEmail').value }); if (!r.ok) return toast(r.error, 1);
-  $('#nName').value = ''; $('#nEmail').value = ''; await loadState(); toast('أُضيف المدرب');
+  const r = await post('/api/trainers', { name, email: $('#nEmail').value, honor: $('#nHonor').value }); if (!r.ok) return toast(r.error, 1);
+  $('#nName').value = ''; $('#nEmail').value = ''; $('#nHonor').value = ''; await loadState(); toast('أُضيف المدرب');
 };
 $('#trList').addEventListener('click', async e => {
   const b = e.target.closest('[data-a]'); if (!b) return;
   const it = b.closest('.person'), id = it.dataset.id, a = b.dataset.a, info = it.querySelector('.tInfo');
-  const val = () => ({ id, name: it.querySelector('.tName').value, email: it.querySelector('.tEmail').value, path: it.querySelector('.tPath').value, mode: it.querySelector('.tMode').value });
+  const val = () => ({ id, name: it.querySelector('.tName').value, email: it.querySelector('.tEmail').value, honor: it.querySelector('.tHonor').value, path: it.querySelector('.tPath').value, mode: it.querySelector('.tMode').value });
   const refresh = async () => { await loadState(); await loadDash(); renderTrainers(); };
   if (a === 'save') { const r = await post('/api/trainers', val()); toast(r.ok ? 'حُفظ' : r.error, !r.ok); await refresh(); }
   if (a === 'browse') { info.textContent = 'إن لم تظهر نافذة الاختيار أمامك فافتحها من شريط المهام…'; const r = await post('/api/browse', { kind: 'file', initial: it.querySelector('.tPath').value }); info.textContent = '';

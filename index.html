@@ -6,7 +6,7 @@
 <title>متابعة مهام أعضاء هيئة التدريب</title>
 <link rel="icon" href="/static/img/logo-color.png">
 <script>try{var q=(location.search.match(/theme=(dark|light)/)||[])[1];if(q)localStorage.setItem("tasks-theme",q);var t=localStorage.getItem("tasks-theme");document.documentElement.dataset.theme=t||(matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light")}catch(e){}</script>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/app.css?v=20261007224642"><link rel="stylesheet" href="/static/web.css?v=20261007224642"><meta name="robots" content="noindex, nofollow"><meta name="description" content="متابعة مهام أعضاء هيئة التدريب أسبوعاً بأسبوع: لوحة القسم والرسائل والتقارير، تعمل داخل المتصفح وبياناتك لا تغادر جهازك.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="/static/app.css?v=20261008143917"><link rel="stylesheet" href="/static/web.css?v=20261008143917"><meta name="robots" content="noindex, nofollow"><meta name="description" content="متابعة مهام أعضاء هيئة التدريب أسبوعاً بأسبوع: لوحة القسم والرسائل والتقارير، تعمل داخل المتصفح وبياناتك لا تغادر جهازك.">
 <link rel="stylesheet" href="/static/semesters.css">
 <link rel="stylesheet" href="/static/bank.css">
 </head>
@@ -63,6 +63,7 @@
       <div class="row">
         <label class="f">اسم المدرب<input id="nName"></label>
         <label class="f">البريد الإلكتروني (اختياري)<input id="nEmail" class="ltr"></label>
+        <label class="f">اللقب في الرسائل<select id="nHonor" title="اللقب «تلقائي» يُقرأ من بداية الاسم (أ. أو م. أو د.)، وإن لم يُكتب لقب فالتحية «سعادة الأستاذ»."><option value="">تلقائي من الاسم</option><option value="أ">أستاذ</option><option value="م">مهندس</option><option value="د">دكتور</option></select></label>
       </div>
       <div class="row" style="margin-top:10px"><button class="btn p" id="bAdd">إضافة المدرب</button></div>
       <p class="hint">بعد الإضافة حدّد ملف المدرب: «إنشاء ملفه» من القالب داخل مجلده، أو «استعراض» لملف موجود، أو أفلت الملف على بطاقته.</p>
@@ -330,7 +331,7 @@
 <div class="toast" id="toast"></div>
 <div id="web-boot"><div class="box"><img src="/static/img/logo-color.png" alt="" class="lg"><div class="spin"></div><h2>متابعة مهام أعضاء هيئة التدريب</h2><p id="web-boot-text">جارٍ التحميل…</p><p>يُحمَّل البرنامج كاملاً عند الفتح الأول (قرابة 30 ميجابايت)، ويكون أسرع بعد ذلك. تبقى البيانات كلها في متصفحك ولا تُرسل إلى أي خادم.</p></div></div><script>/* صفحة البرنامج: تشغّل عامل بايثون، وتجيب طلبات عامل الخدمة منه، ثم تحمّل الواجهة. */
 (async function () {
-  const VERSION = "20261007224642";
+  const VERSION = "20261008143917";
   const ov = document.getElementById("web-boot"), txt = document.getElementById("web-boot-text");
   const fail = m => { ov.classList.add("err"); txt.textContent = m; };
   if (!("serviceWorker" in navigator) || !window.indexedDB) {
